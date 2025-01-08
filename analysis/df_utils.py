@@ -128,3 +128,22 @@ def normalize_schemas(dfs: list[pl.DataFrame]) -> list[pl.DataFrame]:
         ), f"Schema mismatch after normalization: {df.schema} != {base_schema}"
 
     return normalized_dfs
+
+
+def find_outliers(df: pl.DataFrame, column: str) -> pl.DataFrame:
+    q1 = df[column].quantile(0.25)
+    q3 = df[column].quantile(0.75)
+
+    assert (
+        q1 is not None and q3 is not None
+    ), "No data available of which to find quantiles."
+
+    iqr = q3 - q1
+
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+
+    outliers = df.filter(
+        (pl.col(column) < lower_bound) | (pl.col(column) > upper_bound)
+    )
+    return outliers
